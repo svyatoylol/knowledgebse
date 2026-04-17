@@ -130,7 +130,7 @@ while True:
         answer = generate_answer(question, context)
         
         print(f"\n💡 Ответ: {answer.strip()}")
-        
+        print(answer)
         # 5. Источники
         print("\n📎 Источники:")
         for i, r in enumerate(results, 1):
