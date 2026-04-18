@@ -7,3 +7,9 @@ __pycache__/
 *.log
 qdrant_storage/
 .ollama/
+node_modules/
+dist/
+.temp/
+.cache/
+site/docs/.vitepress/dist/
+site/docs/.vitepress/cache/
