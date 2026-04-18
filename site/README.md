@@ -7,10 +7,7 @@
 # 1. Установить зависимости
 npm install
 
-# 2. Запустить Python-бэкенд (в отдельном терминале)
-python ai_backend.py
-
-# 3. Запустить VitePress
+# 2. Запустить VitePress
 npm run dev
 ```
 
