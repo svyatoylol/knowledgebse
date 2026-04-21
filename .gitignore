@@ -7,3 +7,4 @@ __pycache__/
 *.log
 qdrant_storage/
 .ollama/
+node_modules/
