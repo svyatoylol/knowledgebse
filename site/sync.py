@@ -8,7 +8,6 @@ BRANCH = "main"
 TARGET_DIR = os.path.join("docs", "knowledgebse") 
 
 def run_cmd(cmd, cwd=None):
-    """Выполняет консольную команду и перехватывает ошибки."""
     try:
         subprocess.run(cmd, cwd=cwd, check=True, text=True, capture_output=True)
     except subprocess.CalledProcessError as e:
