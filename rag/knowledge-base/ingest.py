@@ -1,132 +1,74 @@
 #!/usr/bin/env python3
-"""
-ingest.py — Прямая индексация: Ollama API + Qdrant
-Без сложных обёрток — максимум надёжности
-"""
-import os
-import sys
-import json
-import requests
-import hashlib
-from llama_index.core import SimpleDirectoryReader
-from llama_index.core.node_parser import TokenTextSplitter
-from qdrant_client import QdrantClient, models
-from qdrant_client.http import models as qmodels
+import os, sys, logging
+from pathlib import Path
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext, Settings
+from llama_index.core.node_parser import SentenceSplitter
+from llama_index.vector_stores.qdrant import QdrantVectorStore
+from llama_index.embeddings.ollama import OllamaEmbedding
+from llama_index.llms.ollama import Ollama
+from qdrant_client import QdrantClient
+from qdrant_client.http.models import Distance, VectorParams
 
-# 🔹 КОНФИГУРАЦИЯ
-EMBEDDING_MODEL = "mxbai-embed-large"
-EMBEDDING_DIM = 1024
-OLLAMA_URL = "http://localhost:11434"
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+
+#данные лежат в rag/knowledge-base/data/
+SCRIPT_DIR = Path(__file__).parent.absolute()
+DATA_DIR = SCRIPT_DIR / "data"
+
 QDRANT_URL = "http://localhost:6333"
 COLLECTION_NAME = "my_kb_local"
-CHUNK_SIZE = 128
-CHUNK_OVERLAP = 16
+EMBEDDING_MODEL = "mxbai-embed-large"
+LLM_MODEL = "llama3.2:3b"
+CHUNK_SIZE = 256
+CHUNK_OVERLAP = 32
+EMBED_BATCH_SIZE = 20
 
-print(f"🤖 Индексация: {EMBEDDING_MODEL} → Qdrant")
+def main():
+    print(f"📂 Загрузка документов из: {DATA_DIR}")
+    if not DATA_DIR.exists():
+        print(f"❌ Папка не найдена! Запустите сначала: python site/sync.py")
+        print(f"   Ожидаемый путь: {DATA_DIR}")
+        sys.exit(1)
 
-# 🔹 Проверка Ollama
-try:
-    resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=3)
-    if resp.status_code != 200:
-        raise Exception("Ollama не отвечает")
-    print(f"✅ Ollama работает")
-except Exception as e:
-    print(f"❌ {e}\n💡 Запустите: ollama serve")
-    sys.exit(1)
-
-# 🔹 Загрузка документов
-print("📄 Загрузка документов...")
-documents = SimpleDirectoryReader("data").load_data()
-if not documents:
-    print("❌ Нет документов в data/")
-    sys.exit(1)
-print(f"✅ Загружено {len(documents)} документов")
-
-# 🔹 Чанкинг
-parser = TokenTextSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP, separator=" ")
-nodes = parser.get_nodes_from_documents(documents)
-print(f"📦 Создано {len(nodes)} чанков")
-
-# 🔹 Функция получения эмбеддинга через прямой HTTP-запрос
-def get_embedding(text: str, model: str, base_url: str) -> list[float]:
-    """Прямой вызов Ollama Embed API — надёжнее, чем через llama-index wrapper"""
-    # Обрезаем текст для безопасности (1500 символов ≈ 300-400 токенов)
-    if len(text) > 1500:
-        text = text[:1500]
-    
-    response = requests.post(
-        f"{base_url}/api/embed",
-        json={"model": model, "input": text},
-        timeout=30
-    )
-    if response.status_code != 200:
-        raise Exception(f"Ollama API error: {response.status_code} — {response.text}")
-    
-    result = response.json()
-    embeddings = result.get("embeddings", [])
-    if not embeddings:
-        raise Exception("Пустой ответ от Ollama")
-    return embeddings[0]
-
-# 🔹 Подготовка Qdrant
-client = QdrantClient(url=QDRANT_URL)
-if client.collection_exists(COLLECTION_NAME):
-    client.delete_collection(COLLECTION_NAME)
-    print("🗑️ Старая коллекция удалена")
-
-client.create_collection(
-    collection_name=COLLECTION_NAME,
-    vectors_config=models.VectorParams(size=EMBEDDING_DIM, distance=models.Distance.COSINE)
-)
-print(f"🗄️ Коллекция создана (dim={EMBEDDING_DIM})")
-
-# 🔹 Индексация: чанк за чанком
-print("🧠 Векторизация и загрузка в Qdrant...")
-success = 0
-
-for i, node in enumerate(nodes):
     try:
-        text = node.get_content().strip()
-        if not text:
-            continue
-            
-        # Получаем эмбеддинг
-        embedding = get_embedding(text, EMBEDDING_MODEL, OLLAMA_URL)
-        
-        # Генерируем уникальный ID из текста
-        point_id = int(hashlib.md5(text.encode()).hexdigest()[:8], 16)
-        
-        # Подготовка метаданных
-        metadata = {
-            "text": text,
-            "source": node.metadata.get("file_name", "unknown"),
-            "chunk_idx": i
-        }
-        
-        # Вставка в Qdrant
-        client.upsert(
-            collection_name=COLLECTION_NAME,
-            points=[
-                qmodels.PointStruct(
-                    id=point_id,
-                    vector=embedding,
-                    payload=metadata
-                )
-            ]
-        )
-        
-        success += 1
-        if (i + 1) % 10 == 0:
-            print(f"  ⏳ Обработано {i+1}/{len(nodes)}...")
-            
+        documents = SimpleDirectoryReader(DATA_DIR).load_data()
+        print(f"✅ Загружено {len(documents)} документов.")
     except Exception as e:
-        print(f"⚠️ Пропущен чанк #{i+1}: {e}")
-        continue
+        print(f"❌ Ошибка чтения: {e}")
+        sys.exit(1)
 
-# 🔹 Итог
-if success == 0:
-    print("❌ Не удалось проиндексировать ни один чанк!")
-    sys.exit(1)
+    if not documents:
+        print("⚠️ Документы не найдены."); return
 
-print(f"\n✅ Готово! Проиндексировано {success}/{len(nodes)} чанков")
-print(f"🔍 Коллекция: {COLLECTION_NAME} в {QDRANT_URL}")
+    client = QdrantClient(QDRANT_URL)
+    
+    # Пересоздаём коллекцию
+    if client.collection_exists(COLLECTION_NAME):
+        print(f"🗑️ Очищаю старую коллекцию...")
+        client.delete_collection(COLLECTION_NAME)
+    
+    client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=VectorParams(size=1024, distance=Distance.COSINE)
+    )
+    print(f"✅ Коллекция '{COLLECTION_NAME}' создана")
+
+    # Настройки моделей
+    Settings.embed_model = OllamaEmbedding(model_name=EMBEDDING_MODEL, embed_batch_size=EMBED_BATCH_SIZE, request_timeout=120.0)
+    Settings.llm = Ollama(model=LLM_MODEL, request_timeout=120.0)
+
+    # Индексация
+    vector_store = QdrantVectorStore(client=client, collection_name=COLLECTION_NAME)
+    storage_context = StorageContext.from_defaults(vector_store=vector_store)
+    
+    print(f"⚡ Индексация... (Чанк: {CHUNK_SIZE})")
+    index = VectorStoreIndex.from_documents(
+        documents, 
+        storage_context=storage_context,
+        transformations=[SentenceSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)],
+        show_progress=True
+    )
+    print("🎉 Индексация завершена!")
+
+if __name__ == "__main__":
+    main()

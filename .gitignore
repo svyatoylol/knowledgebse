@@ -1,4 +1,43 @@
+# --- PYTHON ---
 venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyc
+*.so
+*.log
+*.sqlite3
+
+# --- NODE.JS & VITEPRESS ---
+node_modules/
+.vitepress/cache/
+.vitepress/dist/
+.DS_Store
+dist/
+
+# --- AI & VECTOR DB (Qdrant & Models) ---
+# Данные Qdrant (если монтируются в папку проекта)
+.qdrant/
+qdrant_storage/
+storage/
+# Модели нейросетей (Ollama, GGUF, Safetensors и т.д.)
+models/
+*.gguf
+*.safetensors
+*.bin
+.ollama/
+
+# --- DOCKER & ENV ---
+docker-compose.override.yml
+.env
+.env.local
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swovenv/
 __pycache__/
 *.pyc
 .env
