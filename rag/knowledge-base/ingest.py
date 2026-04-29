@@ -2,6 +2,7 @@
 import os, sys, logging
 from pathlib import Path
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext, Settings
+from llama_index.vector_stores.qdrant import QdrantVectorStore   # если используется
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from llama_index.embeddings.ollama import OllamaEmbedding
