@@ -1,37 +1,7 @@
 [
   {
-    "title": "LINQ — язык интегрированных запросов",
-    "path": "/articles/linq",
-    "description": "<article>..."
-  },
-  {
-    "title": "Типы данных и переменные в C#",
-    "path": "/articles/variables",
-    "description": "<article>..."
-  },
-  {
-    "title": "Массивы и основные коллекции",
-    "path": "/articles/collections",
-    "description": "<article>..."
-  },
-  {
-    "title": "Entity Framework Core: основы ORM",
-    "path": "/articles/entity_framework_core",
-    "description": "<article>..."
-  },
-  {
-    "title": "ASP.NET Core: создание веб-приложений и Web API",
-    "path": "/articles/web_api",
-    "description": "<article>..."
-  },
-  {
-    "title": "Наследование и полиморфизм в C#",
-    "path": "/articles/inherence_polymorphism",
-    "description": "<article>..."
-  },
-  {
-    "title": "Классы и объекты. Основы ООП",
-    "path": "/articles/oop",
+    "title": "Абстрактные классы и интерфейсы",
+    "path": "/articles/abstract_classes",
     "description": "<article>..."
   },
   {
@@ -40,28 +10,18 @@
     "description": "<article>..."
   },
   {
-    "title": "Управляющие конструкции: условия и циклы",
-    "path": "/articles/conditions_and_cycles",
-    "description": "<article>..."
-  },
-  {
-    "title": "Методы: параметры, перегрузка и рекурсия",
-    "path": "/articles/methods",
-    "description": "<article>..."
-  },
-  {
     "title": "Асинхронное программирование (async/await)",
     "path": "/articles/async_await",
     "description": "<article>..."
   },
   {
-    "title": "Generics — обобщённое программирование",
-    "path": "/articles/generics",
+    "title": "Массивы и основные коллекции",
+    "path": "/articles/collections",
     "description": "<article>..."
   },
   {
-    "title": "Dependency Injection и современные возможности C#",
-    "path": "/articles/dependency_injection",
+    "title": "Управляющие конструкции: условия и циклы",
+    "path": "/articles/conditions_and_cycles",
     "description": "<article>..."
   },
   {
@@ -70,8 +30,13 @@
     "description": "<article>..."
   },
   {
-    "title": "Операторы и выражения в C#",
-    "path": "/articles/operators",
+    "title": "Dependency Injection и современные возможности C#",
+    "path": "/articles/dependency_injection",
+    "description": "<article>..."
+  },
+  {
+    "title": "Entity Framework Core: основы ORM",
+    "path": "/articles/entity_framework_core",
     "description": "<article>..."
   },
   {
@@ -80,8 +45,13 @@
     "description": "<article>..."
   },
   {
-    "title": "Свойства, конструкторы и инициализация объектов",
-    "path": "/articles/properties",
+    "title": "Generics — обобщённое программирование",
+    "path": "/articles/generics",
+    "description": "<article>..."
+  },
+  {
+    "title": "Наследование и полиморфизм в C#",
+    "path": "/articles/inherence_polymorphism",
     "description": "<article>..."
   },
   {
@@ -90,13 +60,43 @@
     "description": "<article>..."
   },
   {
+    "title": "LINQ — язык интегрированных запросов",
+    "path": "/articles/linq",
+    "description": "<article>..."
+  },
+  {
+    "title": "Методы: параметры, перегрузка и рекурсия",
+    "path": "/articles/methods",
+    "description": "<article>..."
+  },
+  {
+    "title": "Классы и объекты. Основы ООП",
+    "path": "/articles/oop",
+    "description": "<article>..."
+  },
+  {
+    "title": "Операторы и выражения в C#",
+    "path": "/articles/operators",
+    "description": "<article>..."
+  },
+  {
+    "title": "Свойства, конструкторы и инициализация объектов",
+    "path": "/articles/properties",
+    "description": "<article>..."
+  },
+  {
     "title": "Строки и работа с текстом в C#",
     "path": "/articles/strings",
     "description": "<article>..."
   },
   {
-    "title": "Абстрактные классы и интерфейсы",
-    "path": "/articles/abstract_classes",
+    "title": "Типы данных и переменные в C#",
+    "path": "/articles/variables",
+    "description": "<article>..."
+  },
+  {
+    "title": "ASP.NET Core: создание веб-приложений и Web API",
+    "path": "/articles/web_api",
     "description": "<article>..."
   }
 ]
