@@ -42,13 +42,13 @@ AI-powered документация с возможностью задавать
 ```bash
 # 1. Клонируйте репозиторий
 git clone https://github.com/svyatoylol/knowledgebse.git
-cd knowledge-base
 
-# 2. Скачайте модели через Ollama
-ollama pull llama3.2:3b
-ollama pull mxbai-embed-large
+# 2. Настройте окружение
+setup-and-run.bat # Windows
 
 # 3. Запустите проект
 ./start.sh          # Linux / macOS
 # или
 start.bat           # Windows
+
+# 4. Перейдите по ссылке окна с Vitepress из раздела local
