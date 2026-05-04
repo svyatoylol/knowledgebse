@@ -30,7 +30,7 @@ jagged[1] = new int[] { 4, 5 };
 jagged[2] = new int[] { 6 };
 ```
 
-### List<T> - динамический список
+### `List<T>` - динамический список
 
 ```csharp
 using System.Collections.Generic;
@@ -62,7 +62,7 @@ users.Sort();  // По алфавиту
 users.Reverse();  // В обратном порядке
 ```
 
-### Dictionary<TKey, TValue> - хеш-таблица
+### `Dictionary<TKey, TValue>` - хеш-таблица
 
 ```csharp
 Dictionary<string, int> ages = new Dictionary<string, int>();
@@ -111,33 +111,33 @@ var scores = new Dictionary<string, int>
 using System.Collections.Generic;
 using System.Collections;
 
-// HashSet<T> - уникальные элементы, быстрая проверка вхождения
+// `HashSet<T>` - уникальные элементы, быстрая проверка вхождения
 HashSet<int> uniqueNumbers = new HashSet<int> { 1, 2, 3, 2, 1 };  // {1, 2, 3}
 uniqueNumbers.Add(4);  // true
 bool wasAdded = uniqueNumbers.Add(3);  // false (уже есть)
 
-// Queue<T> - очередь (FIFO: First In, First Out)
+// `Queue<T>` - очередь (FIFO: First In, First Out)
 Queue<string> queue = new Queue<string>();
 queue.Enqueue("First");
 queue.Enqueue("Second");
 string next = queue.Dequeue();  // "First"
 string peeked = queue.Peek();   // "Second" (не удаляет)
 
-// Stack<T> - стек (LIFO: Last In, First Out)
+// `Stack<T>` - стек (LIFO: Last In, First Out)
 Stack<int> stack = new Stack<int>();
 stack.Push(1);
 stack.Push(2);
 int top = stack.Pop();  // 2
 int nextTop = stack.Peek();  // 1
 
-// LinkedList<T> - двусвязный список
+// `LinkedList<T>` - двусвязный список
 LinkedList<string> linked = new LinkedList<string>();
 linked.AddLast("A");
 linked.AddFirst("Start");
 var node = linked.Find("A");
 linked.AddAfter(node, "Between");
 
-// SortedSet<T> - отсортированный набор уникальных элементов
+// `SortedSet<T>` - отсортированный набор уникальных элементов
 SortedSet<int> sorted = new SortedSet<int> { 5, 2, 8, 1 };  // {1, 2, 5, 8}
 ```
 
