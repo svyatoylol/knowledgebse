@@ -1,5 +1,3 @@
-<article>
-
 ## Массивы и основные коллекции
 
 ### Массивы
@@ -111,51 +109,47 @@ var scores = new Dictionary<string, int>
 using System.Collections.Generic;
 using System.Collections;
 
-// `HashSet<T>` - уникальные элементы, быстрая проверка вхождения
+// HashSet<T> - уникальные элементы, быстрая проверка вхождения
 HashSet<int> uniqueNumbers = new HashSet<int> { 1, 2, 3, 2, 1 };  // {1, 2, 3}
 uniqueNumbers.Add(4);  // true
 bool wasAdded = uniqueNumbers.Add(3);  // false (уже есть)
 
-// `Queue<T>` - очередь (FIFO: First In, First Out)
+// Queue<T> - очередь (FIFO: First In, First Out)
 Queue<string> queue = new Queue<string>();
 queue.Enqueue("First");
 queue.Enqueue("Second");
 string next = queue.Dequeue();  // "First"
 string peeked = queue.Peek();   // "Second" (не удаляет)
 
-// `Stack<T>` - стек (LIFO: Last In, First Out)
+// Stack<T> - стек (LIFO: Last In, First Out)
 Stack<int> stack = new Stack<int>();
 stack.Push(1);
 stack.Push(2);
 int top = stack.Pop();  // 2
 int nextTop = stack.Peek();  // 1
 
-// `LinkedList<T>` - двусвязный список
+// LinkedList<T> - двусвязный список
 LinkedList<string> linked = new LinkedList<string>();
 linked.AddLast("A");
 linked.AddFirst("Start");
 var node = linked.Find("A");
 linked.AddAfter(node, "Between");
 
-// `SortedSet<T>` - отсортированный набор уникальных элементов
+// SortedSet<T> - отсортированный набор уникальных элементов
 SortedSet<int> sorted = new SortedSet<int> { 5, 2, 8, 1 };  // {1, 2, 5, 8}
 ```
 
 ### Выбор коллекции
 
-```csharp
-/*
+```
 Когда использовать:
 
-✓ Array: фиксированный размер, максимальная производительность
-✓ List<T>: динамический размер, частый доступ по индексу
-✓ Dictionary<TKey,TValue>: быстрый поиск по ключу, пары ключ-значение
-✓ HashSet<T>: проверка уникальности, операции над множествами
-✓ Queue<T>: обработка в порядке поступления (очередь задач)
-✓ Stack<T>: отмена действий, обход дерева в глубину
-✓ LinkedList<T>: частые вставки/удаления в середине
-✓ SortedSet<T>: автоматическая сортировка + уникальность
-*/
+Array         - фиксированный размер, максимальная производительность
+List<T>       - динамический размер, частый доступ по индексу
+Dictionary    - быстрый поиск по ключу, пары ключ-значение
+HashSet<T>    - проверка уникальности, операции над множествами
+Queue<T>      - обработка в порядке поступления (очередь задач)
+Stack<T>      - отмена действий, обход дерева в глубину
+LinkedList<T> - частые вставки/удаления в середине
+SortedSet<T>  - автоматическая сортировка + уникальность
 ```
-
-</article>
