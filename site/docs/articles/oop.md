@@ -127,9 +127,9 @@ person2.Name = "Bob";
 Console.WriteLine(person1.Name);  // "Bob" (изменился тот же объект!)
 
 // Когда использовать struct:
-// ✓ Небольшие данные (< 16 байт)
-// ✓ Неизменяемые значения (immutable)
-// ✓ Не требуют наследования
-// ✓ Примеры: Point, Rectangle, Color, Complex
+//  Небольшие данные (< 16 байт)
+//  Неизменяемые значения (immutable)
+//  Не требуют наследования
+//  Примеры: Point, Rectangle, Color, Complex
 ```
 

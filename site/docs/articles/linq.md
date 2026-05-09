@@ -142,7 +142,7 @@ using (var context = new AppDbContext())
         .Where(u => EF.Functions.Like(u.Name, "Alice"))  // Специфичный для БД метод
         .ToList();
         
-    // ⚠️ N+1 проблема: запрос в цикле
+    //  N+1 проблема: запрос в цикле
     var users = context.Users.ToList();
     foreach (var user in users)
     {
