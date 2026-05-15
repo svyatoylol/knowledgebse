@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 """
-Webhook listener для автоматического обновления при git push.
-Принимает подписанные запросы от GitHub Actions и запускает update.sh
+Webhook listener для GitHub Actions — минимальная, надёжная версия.
+Сначала отвечает 202, потом асинхронно запускает update.sh
 """
-import http.server, subprocess, json, os, hashlib, hmac, sys, logging, socket
+import http.server, subprocess, json, os, hashlib, hmac, sys, logging, threading
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Загружаем переменные из .env
 load_dotenv(Path(__file__).parent / ".env")
 
 # 🔐 Настройки
 SECRET = os.getenv("WEBHOOK_SECRET", "").encode()
 if not SECRET:
-    print("❌ WEBHOOK_SECRET не задан в .env!")
+    print("❌ WEBHOOK_SECRET не задан в .env!", file=sys.stderr)
     sys.exit(1)
 
-PROJECT_ROOT = Path(os.getenv("PROJECT_ROOT", Path(__file__).parent.resolve()))
+PROJECT_ROOT = Path(__file__).parent.resolve()
 UPDATE_SCRIPT = PROJECT_ROOT / "scripts" / "update.sh"
 PORT = int(os.getenv("WEBHOOK_PORT", "25000"))
 
@@ -26,143 +25,96 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(LOG_FILE),
+        logging.FileHandler(LOG_FILE, encoding='utf-8'),
         logging.StreamHandler(sys.stdout)
     ]
 )
 logger = logging.getLogger(__name__)
 
 def verify_signature(payload: bytes, signature: str) -> bool:
-    """Проверяет HMAC-SHA256 подпись от GitHub"""
-    if not signature.startswith("sha256="):
+    if not signature or not signature.startswith("sha256="):
         return False
     expected = "sha256=" + hmac.new(SECRET, payload, hashlib.sha256).hexdigest()
     return hmac.compare_digest(signature, expected)
 
-def run_update():
-    """Запускает скрипт обновления в фоне"""
+def run_update_async():
+    """Запускает update.sh в отдельном потоке"""
     try:
-        logger.info("🔄 Запуск update.sh...")
-        # Запускаем в фоне, чтобы не блокировать вебхук
-        proc = subprocess.Popen(
+        logger.info("🔄 [ASYNC] Запуск update.sh...")
+        result = subprocess.run(
             [str(UPDATE_SCRIPT)],
             cwd=PROJECT_ROOT,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            capture_output=True,
             text=True,
-            env={**os.environ, "PYTHONUNBUFFERED": "1"}
+            env={**os.environ, "PYTHONUNBUFFERED": "1"},
+            timeout=1800
         )
-        # Читаем вывод в реальном времени
-        for line in proc.stdout:
-            logger.info(f"   {line.strip()}")
-        proc.wait()
-        if proc.returncode == 0:
-            logger.info("✅ Обновление завершено успешно!")
-            notify_telegram("✅ KB обновлён", "Все статьи синхронизированы и проиндексированы.")
+        if result.returncode == 0:
+            logger.info("✅ [ASYNC] Обновление завершено!")
         else:
-            logger.error(f"❌ Обновление завершилось с кодом {proc.returncode}")
-            notify_telegram("❌ Ошибка обновления", f"Код возврата: {proc.returncode}")
+            logger.error(f"❌ [ASYNC] Ошибка (код {result.returncode}): {result.stderr[:500]}")
     except Exception as e:
-        logger.error(f"❌ Ошибка запуска update.sh: {e}")
-        notify_telegram("❌ Ошибка CI/CD", str(e))
+        logger.error(f"❌ [ASYNC] Критическая ошибка: {e}")
 
-def notify_telegram(title: str, message: str):
-    """Отправляет уведомление в Telegram (если настроено)"""
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID")
-    if not token or not chat_id:
-        return  # Не настроено — молча пропускаем
-    try:
-        import requests
-        text = f"*{title}*\n\n{message}"
-        requests.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"},
-            timeout=10
-        )
-    except Exception as e:
-        logger.warning(f"⚠️ Не удалось отправить уведомление в Telegram: {e}")
-
-class WebhookHandler(http.server.BaseHTTPRequestHandler):
-    def log_message(self, *args): pass  # Отключаем стандартный спам
+class Handler(http.server.BaseHTTPRequestHandler):
+    protocol_version = 'HTTP/1.1'
+    
+    def log_message(self, *args): pass  # Отключаем спам
+    
+    def _send(self, code: int, body: dict):
+        response = json.dumps(body).encode()
+        self.send_response(code)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', len(response))
+        self.send_header('Connection', 'close')
+        self.end_headers()
+        self.wfile.write(response)
+        self.wfile.flush()
     
     def do_GET(self):
-        """Health check endpoint"""
         if self.path == "/health":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps({"status": "ok"}).encode())
+            self._send(200, {"status": "ok"})
         else:
-            self.send_response(404)
-            self.end_headers()
+            self._send(404, {"error": "not found"})
     
     def do_POST(self):
-        """Обработка вебхука от GitHub"""
         try:
-            # Проверка подписи
+            length = int(self.headers.get('Content-Length', 0))
+            payload = self.rfile.read(length)
             signature = self.headers.get("X-Hub-Signature-256", "")
-            content_len = int(self.headers.get("Content-Length", 0))
-            payload = self.rfile.read(content_len)
             
             if not verify_signature(payload, signature):
                 logger.warning(f"❌ Invalid signature from {self.client_address[0]}")
-                self.send_response(403)
-                self.end_headers()
-                return
-            
-            # Парсинг события
-            event = self.headers.get("X-GitHub-Event")
-            if event != "push":
-                self.send_response(200)  # Игнорируем другие события
-                self.end_headers()
+                self._send(403, {"error": "invalid signature"})
                 return
             
             data = json.loads(payload)
-            ref = data.get("ref", "")
-            repo = data.get("repository", {}).get("full_name", "unknown")
-            
-            if ref != "refs/heads/main":
-                logger.info(f"⏭ Пропущен пуш в {ref} от {repo}")
-                self.send_response(200)
-                self.end_headers()
+            if data.get("ref") != "refs/heads/main":
+                self._send(200, {"status": "ignored"})
                 return
             
-            logger.info(f"🔄 Получен push в main от {repo}")
+            logger.info(f"🔄 Push в main от {data.get('repository', {}).get('full_name', 'unknown')}")
             
-            # Запускаем обновление в отдельном потоке
-            import threading
-            threading.Thread(target=run_update, daemon=True).start()
+            # 🔥 СРАЗУ отвечаем — до запуска update.sh!
+            self._send(202, {"status": "accepted"})
             
-            self.send_response(202)  # Accepted
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps({"status": "updating"}).encode())
+            # 🔥 Потом запускаем обновление в фоне
+            threading.Thread(target=run_update_async, daemon=True).start()
             
         except Exception as e:
-            logger.error(f"❌ Webhook error: {e}")
-            self.send_response(500)
-            self.end_headers()
+            logger.error(f"❌ Handler error: {e}", exc_info=True)
+            try:
+                self._send(500, {"error": "internal"})
+            except:
+                pass
 
 def main():
-    # Проверка, что скрипт обновления существует
     if not UPDATE_SCRIPT.exists():
-        logger.error(f"❌ Скрипт обновления не найден: {UPDATE_SCRIPT}")
+        logger.error(f"❌ Скрипт не найден: {UPDATE_SCRIPT}")
         sys.exit(1)
     
-    # Проверка порта
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        try:
-            s.bind(("0.0.0.0", PORT))
-        except OSError:
-            logger.error(f"❌ Порт {PORT} занят! Завершите старый процесс или смените порт.")
-            sys.exit(1)
-    
+    server = http.server.HTTPServer(("0.0.0.0", PORT), Handler)
     logger.info(f"🎣 Webhook listener запущен на порту {PORT}")
-    logger.info(f"   Проект: {PROJECT_ROOT}")
-    logger.info(f"   Скрипт обновления: {UPDATE_SCRIPT}")
-    
-    server = http.server.HTTPServer(("0.0.0.0", PORT), WebhookHandler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
