@@ -1,42 +1,59 @@
-// site/docs/articles.data.ts
-import { readFileSync, readdirSync } from 'fs'
-import { join } from 'path'
+// 📍 site/docs/articles.data.ts
+import { createContentLoader } from 'vitepress'
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
+import { readdirSync, readFileSync } from 'node:fs'
 
-export interface Article {
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
+const PROJECT_ROOT = resolve(__dirname, '..', '..', '..')
+const DATA_DIR = resolve(PROJECT_ROOT, 'data')
+const ARTICLES_JSON = resolve(PROJECT_ROOT, 'site', 'public', 'articles.json')
+
+interface Article {
   title: string
   path: string
   description: string
+  filename: string
+  date?: string
 }
 
-export default {
-  // Следить за изменениями в папке со статьями
-  watch: ['../../rag/knowledge-base/data/*.md'],
-  
-  async load(): Promise<Article[]> {
-    const dataDir = join(__dirname, '../../rag/knowledge-base/data')
-    const articles: Article[] = []
+declare const data: Article[]
+export { data }
+
+export default createContentLoader('articles/*.md', {
+  excerpt: true,
+  render: true,
+  transform(raw): Article[] {
+    if (!raw?.length) return []
     
-    for (const file of readdirSync(dataDir)) {
-      if (!file.endsWith('.md')) continue
-      
-      const content = readFileSync(join(dataDir, file), 'utf-8')
-      
-      // Извлекаем заголовок (# ...)
-      const titleMatch = content.match(/^#\s+(.+)$/m)
-      const title = titleMatch?.[1]?.trim() || file.replace('.md', '')
-      
-      // Извлекаем первое предложение после заголовка как описание
-      const descMatch = content.match(/^#\s+.+\n\n(.+?)(?:\n\n|##|$)/s)
-      const rawDesc = descMatch?.[1]?.trim() || ''
-      const description = rawDesc.slice(0, 120) + (rawDesc.length > 120 ? '...' : '')
-      
-      articles.push({
-        title,
-        path: `/articles/${file.replace('.md', '')}`,
-        description
-      })
-    }
-    
-    return articles
+    return raw.map(({ url, frontmatter, excerpt }) => {
+      // 🔥 1. Чистое имя файла (убираем и .md, и .html)
+      const rawName = url.split('/').pop() || 'article'
+      const cleanName = rawName.replace(/\.(md|html)$/, '')
+
+      // 🔥 2. Извлечение заголовка (3 уровня приоритета)
+      let title = frontmatter?.title
+      if (!title && excerpt?.text) {
+        const h1Match = excerpt.text.match(/^#\s+(.+)/m)
+        if (h1Match) title = h1Match[1].trim()
+      }
+      if (!title) {
+        // Fallback: человекочитаемое имя файла
+        title = cleanName.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+      }
+
+      // 🔥 3. Извлечение описания
+      const cleanText = excerpt?.text?.replace(/^#\s+.+\n*/s, '').trim() || ''
+      const description = frontmatter?.description 
+        || (cleanText.length > 10 ? cleanText.slice(0, 120) + '...' : 'Без описания')
+
+      return { title, path: url, description, filename: rawName, date: frontmatter?.date }
+    }).sort((a, b) => {
+      const dA = a.date ? new Date(a.date).getTime() : 0
+      const dB = b.date ? new Date(b.date).getTime() : 0
+      return dB - dA
+    })
   }
-}
+})
