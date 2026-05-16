@@ -88,17 +88,35 @@ log_ok "Порты очищены"
 # 1. Туннель
 start_tunnel
 
-# 2. Qdrant
+# 2. 🗄️ Qdrant
 progress "Qdrant..."
-if command -v docker &>/dev/null && docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^qdrant$"; then
-    log_ok "Qdrant запущен"
-elif command -v docker &>/dev/null; then
-    docker run -d --name qdrant -p 6333:6333 --restart unless-stopped qdrant/qdrant >/dev/null 2>&1
-    sleep 2 && log_ok "Qdrant запущен" || log_warn "Docker не запустил Qdrant"
+if ! command -v docker &>/dev/null; then
+    log_warn "Docker не установлен — установите: sudo apt install docker.io"
+elif ! sudo systemctl is-active --quiet docker 2>/dev/null; then
+    log_warn "Docker-демон не запущен — выполните: sudo systemctl start docker"
 else
-    log_warn "Docker не найден"
+    # Убедимся, что контейнер запущен
+    if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^qdrant$"; then
+        # Создаём папку для данных
+        mkdir -p "$PROJECT_DIR/qdrant_storage"
+        chmod 777 "$PROJECT_DIR/qdrant_storage" 2>/dev/null || true
+        
+        # Запускаем контейнер
+        docker run -d --name qdrant \
+            -p 6333:6333 -p 6334:6334 \
+            -v "$PROJECT_DIR/qdrant_storage:/qdrant/storage" \
+            --restart unless-stopped \
+            qdrant/qdrant:latest >/dev/null 2>&1
+        sleep 5
+    fi
+    
+    # Проверка доступности
+    if curl -sf http://localhost:6333/collections >/dev/null 2>&1; then
+        log_ok "Qdrant готов"
+    else
+        log_warn "Qdrant не отвечает — проверьте: docker logs qdrant"
+    fi
 fi
-
 # 3. Ollama
 progress "Ollama..."
 curl -sf http://localhost:11434/api/tags >/dev/null 2>&1 && log_ok "Ollama готов" || log_warn "Ollama не отвечает"
