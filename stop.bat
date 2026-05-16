@@ -1,63 +1,36 @@
 @echo off
-chcp 65001 > nul
-color 0C
+chcp 65001 >nul
+setlocal enabledelayedexpansion
+cd /d "%~dp0"
 
-:: 🔍 Находим корень проекта
-set "PROJECT_DIR=%~dp0"
-set "PYTHON_DIR=%PROJECT_DIR%rag\knowledge-base"
-set "SITE_DIR=%PROJECT_DIR%site"
-
-echo 🛑 Остановка системы...
+echo ╔══════════════════════════════════════════════╗
+echo ║  🛑 Остановка Knowledge Base                 ║
+echo ╚══════════════════════════════════════════════╝
 echo.
 
-:: 1. Остановка Qdrant (Docker)
-echo 📦 Qdrant...
-docker stop qdrant 2>nul
-if %errorlevel% equ 0 (
-    echo    ✅ Остановлен
-) else (
-    echo    ⚠️ Не найден или уже остановлен
-)
+:: 1. SSH-туннели
+echo 🔹 Остановка туннелей...
+taskkill /f /im ssh.exe >nul 2>&1
+if !errorlevel! equ 0 (echo ✅ Туннели остановлены) else (echo ⚠️  Туннели не были активны)
 
-:: 2. Остановка Python процессов (api.py)
-echo 🔙 API Server...
-taskkill /F /IM python.exe /FI "WINDOWTITLE eq 🔙 API*" 2>nul
-taskkill /F /IM pythonw.exe /FI "WINDOWTITLE eq 🔙 API*" 2>nul
-:: Фолбэк: убиваем все процессы с api.py в командной строке
-wmic process where "commandline like '%%api.py%%'" delete 2>nul
-echo    ✅ Процессы api.py завершены
+:: 2. Python-сервисы (по заголовкам окон)
+echo 🔹 Остановка сервисов...
+taskkill /f /fi "WINDOWTITLE eq 🔙 API" /im cmd.exe >nul 2>&1
+taskkill /f /fi "WINDOWTITLE eq 📡 Webhook" /im cmd.exe >nul 2>&1
+echo ✅ Сервисы остановлены
 
-:: 3. Остановка VitePress / Node процессов
-echo 🌐 VitePress...
-taskkill /F /IM node.exe /FI "WINDOWTITLE eq 🌐 Site*" 2>nul
-:: Фолбэк: убиваем процессы с vitepress в командной строке
-wmic process where "commandline like '%%vitepress%%'" delete 2>nul
-echo    ✅ Процессы VitePress завершены
+:: 3. Очистка портов (самый надёжный способ)
+echo 🔹 Очистка портов...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :8000 ^| findstr LISTENING') do taskkill //PID %%a //F >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :25000 ^| findstr LISTENING') do taskkill //PID %%a //F >nul 2>&1
+echo ✅ Порты очищены
 
-:: 4. Очистка портов (если что-то зависло)
-echo 🧹 Очистка портов...
-:: Порт 6333 (Qdrant)
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :6333 ^| findstr LISTENING') do (
-    taskkill /F /PID %%a 2>nul
-)
-:: Порт 5173 (VitePress)
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5173 ^| findstr LISTENING') do (
-    taskkill /F /PID %%a 2>nul
-)
-:: Порт 5000 (Flask API)
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5000 ^| findstr LISTENING') do (
-    taskkill /F /PID %%a 2>nul
-)
-echo    ✅ Порты освобождены
-
-:: 5. Деактивация виртуального окружения (если активно в текущем окне)
-if defined VIRTUAL_ENV (
-    echo 🐍 Python venv...
-    call deactivate 2>nul
-    echo    ✅ Деактивировано
-)
+:: 4. Проверка
+echo 🔹 Проверка...
+timeout /t 2 /nobreak >nul
+netstat -ano | findstr :8000 | findstr LISTENING >nul 2>&1 && (echo ⚠️  Порт 8000 всё ещё занят) || (echo ✅ Порт 8000 свободен)
+netstat -ano | findstr :25000 | findstr LISTENING >nul 2>&1 && (echo ⚠️  Порт 25000 всё ещё занят) || (echo ✅ Порт 25000 свободен)
 
 echo.
-echo ✅ Система остановлена.
-echo.
-pause
+echo ✅ Готово! Все сервисы остановлены.
+pause >nul

@@ -16,7 +16,7 @@ if %errorlevel% neq 0 (
 )
 
 :: 2. Установка зависимостей
-echo [1/7] Установка системных пакетов...
+echo [1/6] Установка системных пакетов...
 winget install -e --id Git.Git --accept-package-agreements --silent >nul 2>&1
 winget install -e --id Python.Python.3.12 --accept-package-agreements --silent >nul 2>&1
 winget install -e --id OpenJS.NodeJS.LTS --accept-package-agreements --silent >nul 2>&1
@@ -35,9 +35,12 @@ if not exist "knowledgebse" (
 
 :: 4. Python venv & зависимости
 echo [3/7] Настройка Python...
-python -m venv venv
-call venv\Scripts\activate
-pip install flask flask-cors requests llama-index llama-index-core llama-index-embeddings-ollama llama-index-llms-ollama llama-index-vector-stores-qdrant==0.1.4 "numpy<2" python-dotenv pypdf >nul 2>&1
+if not exist "venv" (
+    python -m venv venv
+)
+call venv\Scripts\activate.bat
+python -m pip install --upgrade pip setuptools wheel >nul 2>&1
+pip install -r requirements.txt >nul 2>&1
 echo ✅ Python окружение готово.
 
 :: 5. Node.js
@@ -61,5 +64,6 @@ echo ║  🎉 Установка завершена!                     ║
 echo ╚══════════════════════════════════════════════╝
 echo 📌 1. Перезапустите терминал
 echo 📌 2. Запустите Docker Desktop и дождитесь 🐳
-echo 📌 3. Выполните: start.bat
+echo 📌 3. Скопируйте SSH-ключ на VPS (команда выше)
+echo 📌 4. Выполните: start.bat
 pause

@@ -1,23 +1,59 @@
 #!/usr/bin/env bash
-echo -e "\n🛑 Остановка всех сервисов..."
+set -eo pipefail
+
+# 🎨 Цвета (одинарные кавычки безопасны для set -e/-u)
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+log_ok() { echo -e "${GREEN}✅ $1${NC}"; }
+log_warn() { echo -e "${YELLOW}⚠️  $1${NC}"; }
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOG_DIR="$PROJECT_DIR/logs"
-VPS="root@86.110.194.68"
 
-# 1. Туннель
-echo "🔹 Остановка туннеля..."
-[[ -f "$LOG_DIR/tunnel.pid" ]] && kill "$(cat "$LOG_DIR/tunnel.pid")" 2>/dev/null || true
-pkill -f "ssh.*-R.*8000.*$VPS" 2>/dev/null && echo "  ✅ Туннель остановлен" || echo "  ⏭ Туннель не найден"
+echo -e "\n${CYAN}🛑 Остановка Knowledge Base...${NC}"
 
-# 2. Сервисы
-echo "🔹 Остановка Python-сервисов..."
-pkill -f "python.*api\.py" 2>/dev/null && echo "  ✅ API остановлен" || echo "  ⏭ API не был запущен"
-pkill -f "python.*webhook-listener\.py" 2>/dev/null && echo "  ✅ Webhook остановлен" || echo "  ⏭ Webhook не был запущен"
+# 1. SSH-туннели
+echo -e "\n${YELLOW}🔹 Остановка туннелей...${NC}"
+if pkill -f "ssh.*-R.*86\.110\.194\.68" 2>/dev/null; then
+    log_ok "Туннели остановлены"
+else
+    log_warn "Туннели не были активны"
+fi
 
-# 3. Порты
-echo "🔹 Очистка портов..."
-fuser -k 8000/tcp 2>/dev/null && echo "  ✅ Порт 8000 очищен" || echo "  ⏭ Порт 8000 свободен"
-fuser -k 25000/tcp 2>/dev/null && echo "  ✅ Порт 25000 очищен" || echo "  ⏭ Порт 25000 свободен"
+# 2. Python-сервисы
+echo -e "\n${YELLOW}🔹 Остановка сервисов...${NC}"
+if pkill -f "python.*scripts/api\.py" 2>/dev/null; then
+    log_ok "API остановлен"
+else
+    log_warn "API не был запущен"
+fi
 
-echo -e "\n${GREEN}✅ Готово!${NC}\n"
+if pkill -f "python.*webhook-listener\.py" 2>/dev/null; then
+    log_ok "Webhook остановлен"
+else
+    log_warn "Webhook не был запущен"
+fi
+
+# 3. Очистка портов (упрощено для надёжности)
+echo -e "\n${YELLOW}🔹 Очистка портов...${NC}"
+if command -v fuser >/dev/null 2>&1; then
+    fuser -k 8000/tcp 2>/dev/null || true
+    fuser -k 25000/tcp 2>/dev/null || true
+else
+    lsof -ti:8000 2>/dev/null | xargs -r kill -9 2>/dev/null || true
+    lsof -ti:25000 2>/dev/null | xargs -r kill -9 2>/dev/null || true
+fi
+log_ok "Порты очищены"
+
+# 4. Проверка
+echo -e "\n${YELLOW}🔹 Проверка...${NC}"
+sleep 1
+if ss -tlnp 2>/dev/null | grep -qE ":(8000|25000) "; then
+    log_warn "Порты всё ещё заняты (возможно, запущены от root)"
+else
+    log_ok "Все сервисы остановлены, порты свободны"
+fi
+
+echo -e "\n${GREEN}👋 Готово!${NC}\n"

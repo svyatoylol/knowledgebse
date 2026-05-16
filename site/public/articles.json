@@ -3,66 +3,77 @@
     "title": "Asd",
     "path": "/articles/asd",
     "description": "as...",
-    "filename": "asd.md"
+    "filename": "asd.md",
+    "updated": 1778678296.8042612
   },
   {
     "title": "Почему C# популярен?",
     "path": "/articles/csharp",
     "description": "content = \"\"\"# Введение в C#: От основ до современных возможностей...",
-    "filename": "csharp.md"
+    "filename": "csharp.md",
+    "updated": 1778671237.5414276
   },
   {
     "title": "Edip",
     "path": "/articles/edip",
     "description": "Эдипов комплекс — это психоаналитический термин, описывающий бессознательное влечение ребенка к родителю противоположног...",
-    "filename": "edip.md"
+    "filename": "edip.md",
+    "updated": 1778923742.6702244
   },
   {
     "title": "Evasdias",
     "path": "/articles/evasdias",
     "description": "edfabrfegrfgvfgsdff...",
-    "filename": "evasdias.md"
+    "filename": "evasdias.md",
+    "updated": 1778679733.7413692
   },
   {
     "title": "Заголовок статьи",
     "path": "/articles/my-article",
     "description": "Текст статьи...обезьяна это большая собака но чуть умнее и тупее...",
-    "filename": "my-article.md"
+    "filename": "my-article.md",
+    "updated": 1778664003.2757814
   },
   {
     "title": "Pamagite",
     "path": "/articles/pamagite",
     "description": "as...",
-    "filename": "pamagite.md"
+    "filename": "pamagite.md",
+    "updated": 1778925509.5142536
   },
   {
     "title": "Sadas",
     "path": "/articles/sadas",
     "description": "dasdddddddddddddddddddddd...",
-    "filename": "sadas.md"
+    "filename": "sadas.md",
+    "updated": 1778678296.8043468
   },
   {
     "title": "Sassa",
     "path": "/articles/sassa",
     "description": "dsa...",
-    "filename": "sassa.md"
+    "filename": "sassa.md",
+    "updated": 1778868929.5390065
   },
   {
     "title": "Statia",
     "path": "/articles/statia",
     "description": "stadasjd...",
-    "filename": "statia.md"
+    "filename": "statia.md",
+    "updated": 1778679733.7414856
   },
   {
     "title": "Svinki",
     "path": "/articles/svinki",
     "description": "help...",
-    "filename": "svinki.md"
+    "filename": "svinki.md",
+    "updated": 1778678296.8044612
   },
   {
     "title": "Svyatoizastavvikurabotat",
     "path": "/articles/svyatoizastavvikurabotat",
     "description": "asdasdasdsadas...",
-    "filename": "svyatoizastavvikurabotat.md"
+    "filename": "svyatoizastavvikurabotat.md",
+    "updated": 1778678296.804557
   }
 ]
